@@ -1,0 +1,262 @@
+---
+title: "Project1-Group2"
+author: "Emma Zhang, Ricky Wong, Xiaoxin Bian"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Objective
+
+The goal of this project is to conduct a sentiment analysis of popular keywords and phrases across Twitter, Instagram, and Facebook. This analysis aims to uncover and understand public opinions and emotions, providing actionable insights that enable Ignite Digital, a digital marketing agency, to refine their strategies and enhance their service offerings.
+
+## Install required libraries
+```{r}
+install.packages("shiny")
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("stringr")
+```
+
+```{r}
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+```
+
+
+## Load the dataset
+```{r, include = TRUE, echo = TRUE}
+df <- read.csv("./sentimentdataset.csv")
+```
+
+
+**Use glimpse to explore the dataset.**
+```{r, include = TRUE, echo = TRUE}
+glimpse(df)
+```
+
+## Data Processing
+**Remove unnecessary columns**
+```{r, include = TRUE, echo = TRUE}
+df <- df[, -c(1, 2)]
+```
+
+**Define sentiment label categories**
+```{r, include = TRUE, echo = TRUE}
+positive <- c("Positive", "Happiness", "Joy", "Love", "Amusement", "Enjoyment", "Admiration", "Affection", "Awe","Acceptance", "Adoration", "Calmness", "Excitement", "Kind", "Pride", "Elation", "Euphoria", "Contentment", "Serenity", "Gratitude", "Hope", "Empowerment", "Compassion", "Tenderness", "Enthusiasm", "Fulfillment", "Reverence", "Hopeful", "Proud", "Grateful", "Empathetic", "Compassionate", "Playful", "Free-spirited", "Inspired", "Confident", "Thrill", "Overjoyed", "Inspiration", "Motivation", "JoyfulReunion","Satisfaction", "Blessed", "Appreciation", "Confidence", "Accomplishment", "Wonderment", "Optimism", "Enchantment", "Mindfulness", "Elegance", "Whimsy", "Harmony", "Creativity", "Radiance", "Wonder", "Rejuvenation", "Coziness", "Adventure", "Melodic", "FestiveJoy", "InnerJourney", "Freedom", "Dazzle", "Adrenaline", "ArtisticBurst", "CulinaryOdyssey", "Resilience", "Immersion", "Spark", "Marvel", "Positivity", "Kindness", "Friendship", "Success", "Exploration", "Amazement", "Romance", "Captivation", "Tranquility", "Grandeur", "Emotion", "Energy", "Celebration", "Charm", "Ecstasy", "Colorful", "Hypnotic", "Connection", "Iconic", "Journey", "Engagement", "Touched", "Triumph", "Heartwarming", "Solace", "Breakthrough", "Imagination", "Vibrancy", "Mesmerizing", "Creative Inspiration", "Nature's Beauty", "Celestial Wonder", "Happy", "PlayfulJoy", "DreamChaser", "Blessing", "Sympathy", "Renewed Effort", "Culinary Adventure", "Determination", "Zest", "Joy in Baking", "Challenge", "Winter Magic", "Thrilling Journey", "Runway Creativity", "Ocean's Freedom", "Relief", "Curiosity"
+)
+
+negative <- c("Negative", "Anger", "Fear", "Sadness", "Disgust", "Disappointed", "Bitter", "Shame", "Despair", "Grief", "Loneliness", "Jealousy", "Resentment", "Frustration", "Boredom", "Anxiety", "Intimidation", "Helplessness", "Envy", "Regret", "Melancholy", "Fearful", "Apprehensive", "Overwhelmed", "Devastated", "Frustrated", "Envious", "Dismissive", "Bitterness", "Heartbreak", "Betrayal", "Suffering", "EmotionalStorm", "Isolation", "Disappointment", "LostLove", "Exhaustion", "Sorrow", "Darkness", "Desperation", "Ruins", "Desolation", "Loss", "Heartache", "Solitude", "Obstacle", "Pressure", "Miscalculation", "Sad", "Hate", "Bad", "Jealous", "Embarrassed"
+)
+
+neutral <- c("Neutral", "Surprise", "Anticipation", "Confusion", "Arousal", "Indifference", "Numbness", "Nostalgia", "Ambivalence",  "Contemplation", "Reflection", "Intrigue", "Whispers of the Past", "Pensive", "Bittersweet", "Suspense", "Envisioning History", "Mischievous", "Yearning"
+)
+
+```
+
+**Add a label column based on category definition**
+```{r, include = TRUE, echo = TRUE}
+df <- df %>% mutate(
+  Sentiment = trimws(Sentiment),
+  Sentiment_Label = case_when(
+  Sentiment %in% positive ~ "Positive",
+  Sentiment %in% negative ~ "Negative",
+  Sentiment %in% neutral ~ "Neutral"
+))
+```
+
+**View processed data*
+```{r, include = TRUE, echo = TRUE}
+head(df)
+```
+
+
+**Sentiment distribution by platform*
+```{r, include = TRUE, echo = TRUE}
+sentiment_platform <- df %>%
+  mutate(Platform = trimws(Platform)) %>% 
+  group_by(Platform, Sentiment_Label) %>%
+  summarise(Count = n())
+```
+
+
+## Question 1: What are the prevailing sentiments associated with key marketing terms and how do they vary across different social media platforms?
+Authored by: Emma Zhang
+```{r, include = TRUE, echo = TRUE}
+library(ggplot2)
+ggplot(sentiment_platform, aes(x = trimws(Platform), y = Count, fill = Sentiment_Label)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Sentiment Distribution by Platform", x = "Platform", y = "Count")
+```
+
+
+## Question 2: How do public sentiments correlate with variations in engagement metrics like likes and retweets?
+Authored by: Emma Zhang
+```{r, include = TRUE, echo = TRUE}
+ggplot(df, aes(x = Sentiment_Label, y = Likes, fill = Sentiment_Label)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of Likes by Sentiment", x = "Sentiment", y = "Likes")
+
+ggplot(df, aes(x = Sentiment_Label, y = Retweets, fill = Sentiment_Label)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of Retweets by Sentiment", x = "Sentiment", y = "Retweets")
+```
+
+
+## Question 3:
+Authored by: Xiaoxin Bian
+
+```{r}
+```
+
+## Question 4:
+Authored by: Xiaoxin Bian
+
+```{r}
+```
+
+
+## Question 5: Are there notable differences in sentiment and engagement when comparing user-generated content across different regions? How do these differences impact overall sentiment trends?
+Authored by: Ricky Wong
+
+```{r}
+df$Timestamp <- as.POSIXct(df$Timestamp, format="%Y-%m-%d %H:%M:%S")
+df$Country <- as.factor(str_trim(df$Country))
+```
+
+```{r}
+sentiment_by_region <- df %>%
+  group_by(Country, Sentiment_Label) %>%
+  summarize(count = n()) %>%
+  ungroup()
+
+top_countries <- sentiment_by_region %>%
+  group_by(Country) %>%
+  summarize(total_count = sum(count)) %>%
+  top_n(10, total_count) %>%
+  pull(Country)
+
+top_sentiment_by_region <- sentiment_by_region %>%
+  filter(Country %in% top_countries)
+
+top_sentiment_by_region <- top_sentiment_by_region %>%
+  group_by(Country) %>%
+  mutate(percentage = count / sum(count) * 100) %>%
+  ungroup()
+
+top_sentiment_by_region <- top_sentiment_by_region %>%
+  left_join(
+    sentiment_by_region %>%
+      group_by(Country) %>%
+      summarize(total_count = sum(count)),
+    by = "Country"
+  )
+```
+
+```{r}
+p1 <- ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+            position = position_stack(vjust = 0.5), size = 3) +
+  ggtitle("Sentiment Distribution Across Top 10 Regions") +
+  theme_minimal() +
+  xlab("Country") +
+  ylab("Count") +
+  coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5),
+        legend.position = "top") +
+  theme(plot.margin = margin(5, 5, 5, 5),
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white")) +
+  theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))
+
+# Output 
+ggsave("./charts/sentiment_distribution_across_regions.png", p1, height = 10, width =30)
+
+```
+
+## Question 6: 
+Authored by: Ricky Wong
+
+```{r}
+```
+
+## Shiny Dashboard
+
+```{r}
+# library(shiny)
+
+# # Define the UI
+# ui <- fluidPage(
+#   titlePanel("Sentiment Distribution Across Top 10 Regions"),
+#   sidebarLayout(
+#     sidebarPanel(
+#       # Any additional controls can be added here
+#     ),
+#     mainPanel(
+#       plotOutput("sentimentPlot")
+#     )
+#   )
+# )
+
+# # Define the server logic
+# server <- function(input, output) {
+#   output$sentimentPlot <- renderPlot({
+#     # Filter the top 10 countries
+#     top_countries <- sentiment_by_region %>%
+#       group_by(Country) %>%
+#       summarize(total_count = sum(count)) %>%
+#       top_n(10, total_count) %>%
+#       pull(Country)
+    
+#     # Filter the sentiment data for the top 10 countries
+#     top_sentiment_by_region <- sentiment_by_region %>%
+#       filter(Country %in% top_countries)
+    
+#     # Calculate the percentage
+#     top_sentiment_by_region <- top_sentiment_by_region %>%
+#       group_by(Country) %>%
+#       mutate(percentage = count / sum(count) * 100) %>%
+#       ungroup()
+    
+#     # Add total_count to the filtered dataframe for plotting
+#     top_sentiment_by_region <- top_sentiment_by_region %>%
+#       left_join(
+#         sentiment_by_region %>%
+#           group_by(Country) %>%
+#           summarize(total_count = sum(count)),
+#         by = "Country"
+#       )
+    
+#     # Create the stacked bar chart with percentages
+#     ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
+#       geom_bar(stat = "identity", position = "stack") +
+#       geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+#                 position = position_stack(vjust = 0.5), size = 3) +
+#       ggtitle("Sentiment Distribution Across Top 10 Regions") +
+#       theme_minimal() +
+#       xlab("Country") +
+#       ylab("Count") +
+#       coord_flip() +
+#       theme(axis.text.x = element_text(angle = 45, hjust = 1),
+#             plot.title = element_text(hjust = 0.5),
+#             legend.position = "top") +
+#       theme(plot.margin = margin(5, 5, 5, 5),
+#             plot.background = element_rect(fill = "white"),
+#             panel.background = element_rect(fill = "white")) +
+#       theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))
+#   })
+# }
+
+# # Run the application 
+# shinyApp(ui = ui, server = server)
+
+```
