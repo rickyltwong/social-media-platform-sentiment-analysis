@@ -3,8 +3,9 @@ title: "Project1-Group2"
 author: "Emma Zhang, Ricky Wong, Xiaoxin Bian"
 date: "`r Sys.Date()`"
 output:
-  word_document: default
+  html_document: default
   pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -16,39 +17,54 @@ knitr::opts_chunk$set(echo = TRUE)
 The goal of this project is to conduct a sentiment analysis of popular keywords and phrases across Twitter, Instagram, and Facebook. This analysis aims to uncover and understand public opinions and emotions, providing actionable insights that enable Ignite Digital, a digital marketing agency, to refine their strategies and enhance their service offerings.
 
 ## Install required libraries
+
 ```{r}
 install.packages("shiny")
+install.packages("shinydashboard")
 install.packages("dplyr")
 install.packages("ggplot2")
 install.packages("stringr")
+install.packages("wordcloud")
+install.packages("RColorBrewer")
+install.packages("tm")
+install.packages("tidytext")
 ```
 
 ```{r}
 library(shiny)
+library(shinydashboard)
 library(dplyr)
 library(ggplot2)
 library(stringr)
+library(wordcloud)
+library(RColorBrewer)
+library(tm)
+library(tidytext)
 ```
 
-
 ## Load the dataset
+
 ```{r, include = TRUE, echo = TRUE}
 df <- read.csv("./sentimentdataset.csv")
 ```
 
-
 **Use glimpse to explore the dataset.**
+
 ```{r, include = TRUE, echo = TRUE}
 glimpse(df)
 ```
 
 ## Data Processing
+
 **Remove unnecessary columns**
+
 ```{r, include = TRUE, echo = TRUE}
 df <- df[, -c(1, 2)]
+df$Country <- as.factor(str_trim(df$Country))
 ```
 
 **Define sentiment label categories**
+
 ```{r, include = TRUE, echo = TRUE}
 positive <- c("Positive", "Happiness", "Joy", "Love", "Amusement", "Enjoyment", "Admiration", "Affection", "Awe","Acceptance", "Adoration", "Calmness", "Excitement", "Kind", "Pride", "Elation", "Euphoria", "Contentment", "Serenity", "Gratitude", "Hope", "Empowerment", "Compassion", "Tenderness", "Enthusiasm", "Fulfillment", "Reverence", "Hopeful", "Proud", "Grateful", "Empathetic", "Compassionate", "Playful", "Free-spirited", "Inspired", "Confident", "Thrill", "Overjoyed", "Inspiration", "Motivation", "JoyfulReunion","Satisfaction", "Blessed", "Appreciation", "Confidence", "Accomplishment", "Wonderment", "Optimism", "Enchantment", "Mindfulness", "Elegance", "Whimsy", "Harmony", "Creativity", "Radiance", "Wonder", "Rejuvenation", "Coziness", "Adventure", "Melodic", "FestiveJoy", "InnerJourney", "Freedom", "Dazzle", "Adrenaline", "ArtisticBurst", "CulinaryOdyssey", "Resilience", "Immersion", "Spark", "Marvel", "Positivity", "Kindness", "Friendship", "Success", "Exploration", "Amazement", "Romance", "Captivation", "Tranquility", "Grandeur", "Emotion", "Energy", "Celebration", "Charm", "Ecstasy", "Colorful", "Hypnotic", "Connection", "Iconic", "Journey", "Engagement", "Touched", "Triumph", "Heartwarming", "Solace", "Breakthrough", "Imagination", "Vibrancy", "Mesmerizing", "Creative Inspiration", "Nature's Beauty", "Celestial Wonder", "Happy", "PlayfulJoy", "DreamChaser", "Blessing", "Sympathy", "Renewed Effort", "Culinary Adventure", "Determination", "Zest", "Joy in Baking", "Challenge", "Winter Magic", "Thrilling Journey", "Runway Creativity", "Ocean's Freedom", "Relief", "Curiosity"
 )
@@ -62,6 +78,7 @@ neutral <- c("Neutral", "Surprise", "Anticipation", "Confusion", "Arousal", "Ind
 ```
 
 **Add a label column based on category definition**
+
 ```{r, include = TRUE, echo = TRUE}
 df <- df %>% mutate(
   Sentiment = trimws(Sentiment),
@@ -72,23 +89,44 @@ df <- df %>% mutate(
 ))
 ```
 
-**View processed data*
+\*\*View processed data\*
+
 ```{r, include = TRUE, echo = TRUE}
 head(df)
 ```
 
+\*\*Sentiment distribution by platform\*
 
-**Sentiment distribution by platform*
 ```{r, include = TRUE, echo = TRUE}
 sentiment_platform <- df %>%
   mutate(Platform = trimws(Platform)) %>% 
   group_by(Platform, Sentiment_Label) %>%
   summarise(Count = n())
+
+sentiment_platform
 ```
 
+```{r}
+# Extract hashtags from the Hashtags column
+extract_hashtags <- function(hashtags) {
+  unlist(strsplit(hashtags, " "))
+}
+
+all_hashtags <- unlist(lapply(df$Hashtags, extract_hashtags))
+all_hashtags <- all_hashtags[all_hashtags != "" & all_hashtags != " "]
+hashtag_counts <- as.data.frame(table(all_hashtags))
+
+colnames(hashtag_counts) <- c("Hashtag", "Frequency")
+sorted_hashtag_counts <- hashtag_counts %>%
+  arrange(desc(Frequency))
+
+sorted_hashtag_counts
+```
 
 ## Question 1: What are the prevailing sentiments associated with key marketing terms and how do they vary across different social media platforms?
+
 Authored by: Emma Zhang
+
 ```{r, include = TRUE, echo = TRUE}
 library(ggplot2)
 ggplot(sentiment_platform, aes(x = trimws(Platform), y = Count, fill = Sentiment_Label)) +
@@ -96,9 +134,10 @@ ggplot(sentiment_platform, aes(x = trimws(Platform), y = Count, fill = Sentiment
   labs(title = "Sentiment Distribution by Platform", x = "Platform", y = "Count")
 ```
 
-
 ## Question 2: How do public sentiments correlate with variations in engagement metrics like likes and retweets?
+
 Authored by: Emma Zhang
+
 ```{r, include = TRUE, echo = TRUE}
 ggplot(df, aes(x = Sentiment_Label, y = Likes, fill = Sentiment_Label)) +
   geom_boxplot() +
@@ -109,27 +148,32 @@ ggplot(df, aes(x = Sentiment_Label, y = Retweets, fill = Sentiment_Label)) +
   labs(title = "Box Plot of Retweets by Sentiment", x = "Sentiment", y = "Retweets")
 ```
 
-
 ## Question 3:
+
 Authored by: Xiaoxin Bian
 
 ```{r}
 ```
 
 ## Question 4:
+
 Authored by: Xiaoxin Bian
 
 ```{r}
 ```
 
+## Question 5: Are there notable differences in sentiment and engagement when comparing user-generated content across different regions? How do these differences impact overall sentiment trends? [Region-specific Strategy]
 
-## Question 5: Are there notable differences in sentiment and engagement when comparing user-generated content across different regions? How do these differences impact overall sentiment trends?
 Authored by: Ricky Wong
 
-```{r}
-df$Timestamp <- as.POSIXct(df$Timestamp, format="%Y-%m-%d %H:%M:%S")
-df$Country <- as.factor(str_trim(df$Country))
-```
+In marketing trend investigations, understanding regional differences in user-generated content is crucial for tailoring strategies to specific markets. Social media users come from diverse regions, and analyzing sentiment and engagement metrics across these regions helps us optimize our marketing efforts.
+
+By examining our dataset, which categorizes user-generated content by sentiment (positive, negative, neutral) and includes engagement metrics like likes and retweets, we can identify regional trends. This analysis focuses on North America and Europe to highlight key differences.
+
+Analysis Strategy:
+1. We grouped the data by country and sentiment to observe variations. We focused on the top 10 countries by post count, calculating the percentage of each sentiment.
+2. We want to focus in North America and Europe, we grouped the top 10 countries into North America and Europe. We then again analyze sentiment distribution within these regions.
+3. For each region, identify the top 10 hashtags based on the total number of retweets from posts containing these hashtags.
 
 ```{r}
 sentiment_by_region <- df %>%
@@ -158,9 +202,9 @@ top_sentiment_by_region <- top_sentiment_by_region %>%
       summarize(total_count = sum(count)),
     by = "Country"
   )
-```
 
-```{r}
+top_sentiment_by_region
+
 p1 <- ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
   geom_bar(stat = "identity", position = "stack") +
   geom_text(aes(label = paste0(round(percentage, 1), "%")), 
@@ -169,21 +213,100 @@ p1 <- ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y =
   theme_minimal() +
   xlab("Country") +
   ylab("Count") +
-  coord_flip() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         plot.title = element_text(hjust = 0.5),
         legend.position = "top") +
   theme(plot.margin = margin(5, 5, 5, 5),
         plot.background = element_rect(fill = "white"),
         panel.background = element_rect(fill = "white")) +
+  theme(plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+  coord_flip() +
+  theme(plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white")) +
   theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))
 
-# Output 
-ggsave("./charts/sentiment_distribution_across_regions.png", p1, height = 10, width =30)
+p1
 
+# ggsave("./charts/sentiment_distribution_across_regions.png", p1, height = 15, width =25)
 ```
 
-## Question 6: 
+### Results 1:
+
+From the analysis, it is observed that the USA has the highest number of posts. Among these posts, approximately 70% express a positive sentiment, which is the highest compared to the other nine countries. In the top 10 countries, North America includes the USA and Canada, while European countries include the UK, France, Germany, and Italy.
+
+```{r}
+north_america <- c("USA", "Canada")
+europe <- c("UK", "Germany", "France", "Italy")
+
+df_na <- df %>% filter(Country %in% north_america)
+df_eu <- df %>% filter(Country %in% europe)
+
+# Top 10 hashtags by retweets in North America
+top_hashtags_na <- df_na %>%
+  filter(Sentiment == "Positive") %>%
+  unnest_tokens(word, Hashtags) %>%
+  group_by(word) %>%
+  summarize(total_retweets = sum(Retweets)) %>%
+  top_n(10, total_retweets)
+
+# Top 10 hashtags by retweets in Europe
+top_hashtags_eu <- df_eu %>%
+  filter(Sentiment == "Positive") %>%
+  unnest_tokens(word, Hashtags) %>%
+  group_by(word) %>%
+  summarize(total_retweets = sum(Retweets)) %>%
+  top_n(10, total_retweets)
+
+# Plot top hashtags by retweets for North America
+p2 <- ggplot(top_hashtags_na, aes(x = reorder(word, total_retweets), y = total_retweets)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  coord_flip() +
+  ggtitle("Top 10 Hashtags by Retweets in North America") +
+  xlab("Hashtag") +
+  ylab("Total Retweets")
+
+print(p2)
+
+# Plot top hashtags by retweets for Europe
+p3 <- ggplot(top_hashtags_eu, aes(x = reorder(word, total_retweets), y = total_retweets)) +
+  geom_bar(stat = "identity", fill = "red") +
+  coord_flip() +
+  ggtitle("Top 10 Hashtags by Retweets in Europe") +
+  xlab("Hashtag") +
+  ylab("Total Retweets")
+
+print(p3)
+```
+
+```{r}
+# Select top 3 hashtags from the top 10
+top_3_hashtags_na <- top_hashtags_na %>%
+  top_n(3, total_retweets)
+
+top_3_hashtags_eu <- top_hashtags_eu %>%
+  top_n(3, total_retweets)
+
+# Create word clouds for top 3 hashtags
+wordcloud(words = top_3_hashtags_na$word, freq = top_3_hashtags_na$total_retweets, 
+          scale = c(3, 0.1), colors = brewer.pal(8, "Blues"), main = "Top 3 Hashtags in North America")
+
+wordcloud(words = top_3_hashtags_eu$word, freq = top_3_hashtags_eu$total_retweets, 
+          scale = c(3, 0.1), colors = brewer.pal(8, "Oranges"), main = "Top 3 Hashtags in Europe")
+```
+
+### Results 2:
+
+We aggregated the data according to the countries belonging to North America and Europe and further analyzed it. We identified the top 10 hashtags by retweets in both regions. For North America, the top hashtags are #cooking, #workfromhome, #productivity, #coding, and so on. For Europe, the leading hashtags are #fitnesschallenge, #familytime, #weekend, and #newbeginnings.
+
+### Concolusion: 
+
+Understanding these regional differences allows us to:
+
+- tailor content to fit the preferences and sentiments of each region, improving engagement and conversion rates.
+- use sentiment and hashtag trends to create targeted marketing campaigns, such as leveraging nostalgic content in regions where it performs well.
+
+## Question 6:
+
 Authored by: Ricky Wong
 
 ```{r}
@@ -192,71 +315,128 @@ Authored by: Ricky Wong
 ## Shiny Dashboard
 
 ```{r}
-# library(shiny)
+ui <- dashboardPage(
+  dashboardHeader(title = "Sentiment Analysis Dashboard"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Sentiment Distribution", tabName = "sentiment", icon = icon("chart-bar")),
+      menuItem("Top Hashtags", tabName = "hashtags", icon = icon("hashtag"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # First tab content
+      tabItem(tabName = "sentiment",
+              fluidRow(
+                box(
+                  title = "Sentiment Distribution Across Top 10 Regions", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("sentimentPlot", width = 1200)
+                , width=12)
+              )
+      ),
+      
+      # Second tab content
+      tabItem(tabName = "hashtags",
+              fluidRow(
+                box(
+                  title = "Top 10 Hashtags by Retweets", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  selectInput("region", "Select Region:", choices = c("North America", "Europe")),
+                  plotOutput("hashtagPlot", height = 400)
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Word Cloud of Top 3 Hashtags", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("wordcloudPlot", height = 400)
+                )
+              )
+      )
+    )
+  )
+)
 
-# # Define the UI
-# ui <- fluidPage(
-#   titlePanel("Sentiment Distribution Across Top 10 Regions"),
-#   sidebarLayout(
-#     sidebarPanel(
-#       # Any additional controls can be added here
-#     ),
-#     mainPanel(
-#       plotOutput("sentimentPlot")
-#     )
-#   )
-# )
+# Define server logic required
+server <- function(input, output) {
+  
+  # Preprocess data for sentiment analysis
+  sentiment_by_region <- df %>%
+    group_by(Country, Sentiment_Label) %>%
+    summarize(count = n()) %>%
+    ungroup()
+  
+  top_countries <- sentiment_by_region %>%
+    group_by(Country) %>%
+    summarize(total_count = sum(count)) %>%
+    top_n(10, total_count) %>%
+    pull(Country)
+  
+  
+  # Render sentiment distribution plot
+  output$sentimentPlot <- renderPlot({
+    ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
+      geom_bar(stat = "identity", position = "stack") +
+      geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+                position = position_stack(vjust = 0.5), size = 3) +
+      ggtitle("Sentiment Distribution Across Top 10 Regions") +
+      theme_minimal() +
+      xlab("Country") +
+      ylab("Count") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            plot.title = element_text(hjust = 0.5),
+            legend.position = "top") +
+      coord_flip()
+  })
+  
+  # Reactive expressions for region-specific data
+  north_america <- c("USA", "Canada")
+  europe <- c("UK", "Germany", "France", "Italy")
+  
+  region_data <- reactive({
+    if (input$region == "North America") {
+      df %>% filter(Country %in% north_america)
+    } else {
+      df %>% filter(Country %in% europe)
+    }
+  })
+  
+  # Render hashtag plot based on selected region
+  output$hashtagPlot <- renderPlot({
+    data <- region_data()
+    
+    top_hashtags <- data %>%
+      filter(Sentiment == "Positive") %>%
+      unnest_tokens(word, Hashtags) %>%
+      group_by(word) %>%
+      summarize(total_retweets = sum(Retweets)) %>%
+      top_n(10, total_retweets)
+    
+    ggplot(top_hashtags, aes(x = reorder(word, total_retweets), y = total_retweets)) +
+      geom_bar(stat = "identity", fill = ifelse(input$region == "North America", "blue", "red")) +
+      coord_flip() +
+      ggtitle(paste("Top 10 Hashtags by Retweets in", input$region)) +
+      xlab("Hashtag") +
+      ylab("Total Retweets")
+  })
+  
+  # Render word cloud based on selected region
+  output$wordcloudPlot <- renderPlot({
+    data <- region_data()
+    
+    top_hashtags <- data %>%
+      filter(Sentiment == "Positive") %>%
+      unnest_tokens(word, Hashtags) %>%
+      group_by(word) %>%
+      summarize(total_retweets = sum(Retweets)) %>%
+      top_n(10, total_retweets)
+    
+    top_3_hashtags <- top_hashtags %>%
+      top_n(3, total_retweets)
+    
+    wordcloud(words = top_3_hashtags$word, freq = top_3_hashtags$total_retweets, 
+              scale = c(3, 0.5), colors = ifelse(input$region == "North America", "blue", "red"))
+  })
+}
 
-# # Define the server logic
-# server <- function(input, output) {
-#   output$sentimentPlot <- renderPlot({
-#     # Filter the top 10 countries
-#     top_countries <- sentiment_by_region %>%
-#       group_by(Country) %>%
-#       summarize(total_count = sum(count)) %>%
-#       top_n(10, total_count) %>%
-#       pull(Country)
-    
-#     # Filter the sentiment data for the top 10 countries
-#     top_sentiment_by_region <- sentiment_by_region %>%
-#       filter(Country %in% top_countries)
-    
-#     # Calculate the percentage
-#     top_sentiment_by_region <- top_sentiment_by_region %>%
-#       group_by(Country) %>%
-#       mutate(percentage = count / sum(count) * 100) %>%
-#       ungroup()
-    
-#     # Add total_count to the filtered dataframe for plotting
-#     top_sentiment_by_region <- top_sentiment_by_region %>%
-#       left_join(
-#         sentiment_by_region %>%
-#           group_by(Country) %>%
-#           summarize(total_count = sum(count)),
-#         by = "Country"
-#       )
-    
-#     # Create the stacked bar chart with percentages
-#     ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
-#       geom_bar(stat = "identity", position = "stack") +
-#       geom_text(aes(label = paste0(round(percentage, 1), "%")), 
-#                 position = position_stack(vjust = 0.5), size = 3) +
-#       ggtitle("Sentiment Distribution Across Top 10 Regions") +
-#       theme_minimal() +
-#       xlab("Country") +
-#       ylab("Count") +
-#       coord_flip() +
-#       theme(axis.text.x = element_text(angle = 45, hjust = 1),
-#             plot.title = element_text(hjust = 0.5),
-#             legend.position = "top") +
-#       theme(plot.margin = margin(5, 5, 5, 5),
-#             plot.background = element_rect(fill = "white"),
-#             panel.background = element_rect(fill = "white")) +
-#       theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))
-#   })
-# }
-
-# # Run the application 
-# shinyApp(ui = ui, server = server)
-
+# Run the application 
+shinyApp(ui = ui, server = server)
 ```
