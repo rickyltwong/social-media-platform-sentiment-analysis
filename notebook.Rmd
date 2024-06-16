@@ -6,11 +6,8 @@ output:
   html_document: default
   pdf_document: default
   word_document: default
+runtime: shiny
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## Objective
 
@@ -18,19 +15,20 @@ The goal of this project is to conduct a sentiment analysis of popular keywords 
 
 ## Install required libraries
 
-```{r}
-install.packages("shiny")
-install.packages("shinydashboard")
-install.packages("dplyr")
-install.packages("ggplot2")
-install.packages("stringr")
-install.packages("wordcloud")
-install.packages("RColorBrewer")
-install.packages("tm")
-install.packages("tidytext")
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("shiny")
+#install.packages("shinydashboard")
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("stringr")
+#install.packages("wordcloud")
+#install.packages("RColorBrewer")
+#install.packages("tm")
+#install.packages("tidytext")
 ```
 
-```{r}
+```{r, include=FALSE}
 library(shiny)
 library(shinydashboard)
 library(dplyr)
@@ -162,7 +160,7 @@ Authored by: Xiaoxin Bian
 ```{r}
 ```
 
-## Question 5: Are there notable differences in sentiment and engagement when comparing user-generated content across different regions? How do these differences impact overall sentiment trends? [Region-specific Strategy]
+## Question 5: How do the sentiments associated with key marketing terms change over time? Which months have the highest counts of positive and negative sentiments, and what are the trending hashtags during these periods? [Temporal Trends Strategy]
 
 Authored by: Ricky Wong
 
@@ -230,7 +228,7 @@ p1
 # ggsave("./charts/sentiment_distribution_across_regions.png", p1, height = 15, width =25)
 ```
 
-### Results 1:
+### Results 1
 
 From the analysis, it is observed that the USA has the highest number of posts. Among these posts, approximately 70% express a positive sentiment, which is the highest compared to the other nine countries. In the top 10 countries, North America includes the USA and Canada, while European countries include the UK, France, Germany, and Italy.
 
@@ -280,37 +278,138 @@ print(p3)
 
 ```{r}
 # Select top 3 hashtags from the top 10
-top_3_hashtags_na <- top_hashtags_na %>%
-  top_n(3, total_retweets)
-
-top_3_hashtags_eu <- top_hashtags_eu %>%
-  top_n(3, total_retweets)
 
 # Create word clouds for top 3 hashtags
-wordcloud(words = top_3_hashtags_na$word, freq = top_3_hashtags_na$total_retweets, 
-          scale = c(3, 0.1), colors = brewer.pal(8, "Blues"), main = "Top 3 Hashtags in North America")
+wordcloud(words = top_hashtags_na$word, freq = top_hashtags_na$total_retweets, 
+          scale = c(2, 0.1), min.freq = 1, 
+          max.words = 200, 
+          random.order = FALSE, 
+          rot.per = 0.35,colors = brewer.pal(8, "Blues"), main = "Top 3 Hashtags in North America")
 
-wordcloud(words = top_3_hashtags_eu$word, freq = top_3_hashtags_eu$total_retweets, 
-          scale = c(3, 0.1), colors = brewer.pal(8, "Oranges"), main = "Top 3 Hashtags in Europe")
+wordcloud(words = top_hashtags_eu$word, freq = top_hashtags_eu$total_retweets, 
+          scale = c(2, 0.1), min.freq = 1, 
+          max.words = 200, 
+          random.order = FALSE, 
+          rot.per = 0.35,colors = brewer.pal(8, "Oranges"), main = "Top 3 Hashtags in Europe")
 ```
 
-### Results 2:
+### Results 2
 
 We aggregated the data according to the countries belonging to North America and Europe and further analyzed it. We identified the top 10 hashtags by retweets in both regions. For North America, the top hashtags are #cooking, #workfromhome, #productivity, #coding, and so on. For Europe, the leading hashtags are #fitnesschallenge, #familytime, #weekend, and #newbeginnings.
 
-### Concolusion: 
+### Insight
 
 Understanding these regional differences allows us to:
 
-- tailor content to fit the preferences and sentiments of each region, improving engagement and conversion rates.
-- use sentiment and hashtag trends to create targeted marketing campaigns, such as leveraging nostalgic content in regions where it performs well.
+- tailor content to fit the preferences and sentiments of each region, improving engagement and conversion rates. For example, ...
+- use sentiment and hashtag trends to create targeted marketing campaigns, such as leveraging nostalgic content in regions where it performs well. For example, ...
 
-## Question 6:
+## Question 6: How do the sentiments associated with key marketing terms change over time? Which months have the highest counts of positive and negative sentiments, and what are the trending hashtags during these periods? [Time-specifc strategy]
 
 Authored by: Ricky Wong
 
 ```{r}
+df$Timestamp <- as.POSIXct(df$Timestamp, format="%Y-%m-%d %H:%M:%S")
+
+# Extract year and month for time series analysis
+df <- df %>%
+  mutate(YearMonth = format(Timestamp, "%Y-%m"))
+
+# Filter data to include only from 2020 onward
+df <- df %>%
+  filter(format(Timestamp, "%Y") >= 2020)
+
+# Group by YearMonth and Sentiment to get the count of each sentiment per month
+sentiment_over_time <- df %>%
+  group_by(YearMonth, Sentiment_Label) %>%
+  summarize(count = n()) %>%
+  ungroup()
+
+sentiment_over_time
+
+# Plot the sentiment trends over time
+ggplot(sentiment_over_time, aes(x = as.Date(paste0(YearMonth, "-01")), y = count, color = Sentiment_Label)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  ggtitle("Sentiment Trends Over Time From 2020") +
+  xlab("Time") +
+  ylab("Count of Sentiments") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+```{r}
+max_positive_month <- sentiment_over_time %>%
+  filter(Sentiment_Label == "Positive") %>%
+  arrange(desc(count)) %>%
+  slice(1) %>%
+  pull(YearMonth)
+
+max_negative_month <- sentiment_over_time %>%
+  filter(Sentiment_Label == "Negative") %>%
+  arrange(desc(count)) %>%
+  slice(1) %>%
+  pull(YearMonth)
+
+positive_month_data <- df %>%
+  filter(YearMonth == max_positive_month)
+
+negative_month_data <- df %>%
+  filter(YearMonth == max_negative_month)
+
+top_positive_hashtags <- positive_month_data %>%
+  unnest_tokens(word, Hashtags) %>%
+  group_by(word) %>%
+  summarize(post_count = n()) %>%
+  arrange(desc(post_count))
+
+top_negative_hashtags <- negative_month_data %>%
+  unnest_tokens(word, Hashtags) %>%
+  group_by(word) %>%
+  summarize(post_count = n()) %>%
+  arrange(desc(post_count))
+
+top_positive_hashtags
+top_negative_hashtags
+
+wordcloud(words = top_positive_hashtags$word, freq = top_positive_hashtags$post_count, 
+          scale = c(2, 0.1), min.freq = 1, 
+          max.words = 200, 
+          random.order = FALSE, 
+          rot.per = 0.35, colors = brewer.pal(8, "Blues"), main = paste("Top Hashtags in", max_positive_month, "(Positive)"))
+
+wordcloud(words = top_negative_hashtags$word, freq = top_negative_hashtags$post_count, 
+          scale = c(2, 0.1), min.freq = 1, 
+          max.words = 200, 
+          random.order = FALSE, 
+          rot.per = 0.35, colors = brewer.pal(8, "Reds"), main = paste("Top Hashtags in", max_negative_month, "(Negative)"))
+
+
+```
+
+### Results
+
+From the analysis, we observed that the months with the highest counts of positive and negative sentiments vary. Specifically, January 2023 had the highest count of positive sentiment, while September 2023 had the highest count of negative sentiment.
+
+For the month with the highest positive sentiment, the top hashtags included:
+
+- #cooking
+- #nature
+- #gaming
+- #fitness
+
+For the month with the highest negative sentiment, the top hashtags included:
+
+- #highschoolstruggles
+- #highschoolreality
+- #highschoolemotions
+
+This pattern is quite reasonable and understandable. January, being the start of the year, is a time when people tend to stay positive and motivated, setting new goals. On the other hand, September marks the beginning of a new academic year. Adolescents face new challenges and uncertainties, especially those entering high school, which can lead to feelings of pessimism or negativity.
+
+### Insight
+
+Understanding these temporal sentiment trends enables Ignite Digital to tailor their marketing strategies more effectively. For example, promoting wellness and self-improvement content in January or addressing back-to-school anxieties in September can lead to more impactful and timely marketing efforts. By aligningour campaigns with the flow of public sentiment, we can enhance engagement and resonance with our audience.
+
 
 ## Shiny Dashboard
 
