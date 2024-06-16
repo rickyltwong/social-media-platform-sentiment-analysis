@@ -110,10 +110,64 @@ ggplot(df, aes(x = Sentiment_Label, y = Retweets, fill = Sentiment_Label)) +
 ```
 
 
-## Question 3:
+## Question 3:Which specific keywords or phrases are most frequently associated with positive or negative sentiments?
 Authored by: Xiaoxin Bian
 
 ```{r}
+install.packages("tidyr")
+install.packages("tidytext")
+library(tidytext)
+library(tidyr)
+
+# Cleaning and splitting text
+text_data <- df %>%
+  mutate(Text = tolower(Text)) %>%
+  unnest_tokens(word, Text)
+
+# Cleaning and splitting hashtags
+hashtag_data <- df %>%
+  mutate(Hashtags = str_replace_all(Hashtags, " #", ",")) %>%
+  separate_rows(Hashtags, sep = ",") %>%
+  filter(Hashtags != "") %>%
+  mutate(word = Hashtags)  # Create a uniform column name for merging
+
+# Combine both datasets
+combined_data <- bind_rows(text_data, hashtag_data)
+```
+```{r}
+stop_words <- get_stopwords()
+
+cleaned_data <- combined_data %>%
+  anti_join(stop_words, by = "word")
+```
+```{r}
+keyword_sentiment <- cleaned_data %>%
+  group_by(word, Sentiment_Label) %>%
+  summarise(Count = n(), .groups = 'drop')
+
+print(keyword_sentiment)
+```
+```{r}
+# Filter for positive and negative sentiments
+positive_words <- keyword_sentiment %>%
+  filter(Sentiment_Label == "Positive") %>%
+  arrange(desc(Count))
+
+negative_words <- keyword_sentiment %>%
+  filter(Sentiment_Label == "Negative") %>%
+  arrange(desc(Count))
+
+# Use ggplot2 for visualization
+library(ggplot2)
+ggplot(positive_words[1:20,], aes(x = reorder(word, -Count), y = Count)) +
+  geom_bar(stat = "identity", fill = "green") +
+  labs(title = "Top Positive Keywords", x = "Keywords", y = "Frequency") +
+  coord_flip()
+
+ggplot(negative_words[1:20,], aes(x = reorder(word, -Count), y = Count)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(title = "Top Negative Keywords", x = "Keywords", y = "Frequency") +
+  coord_flip()
 ```
 
 ## Question 4:
