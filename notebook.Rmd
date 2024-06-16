@@ -170,10 +170,68 @@ ggplot(negative_words[1:20,], aes(x = reorder(word, -Count), y = Count)) +
   coord_flip()
 ```
 
-## Question 4:
+## Question 4:Develop machine learning models that can predict the sentiment of a text based on the keywords it contains.
 Authored by: Xiaoxin Bian
 
 ```{r}
+if (!require(tm)) install.packages("tm")
+library(tm)
+
+# Check and clean data, handle NA values if necessary
+data <- na.omit(df)
+
+# Create a corpus and clean text data
+corpus <- VCorpus(VectorSource(data$Text))
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, removeWords, stopwords("english"))
+
+# Create a document-term matrix
+dtm <- DocumentTermMatrix(corpus)
+data_matrix <- as.matrix(dtm)
+colnames(data_matrix) <- make.names(colnames(data_matrix))
+
+```
+```{r}
+if (!require(caret)) install.packages("caret")
+set.seed(123)
+training_samples <- createDataPartition(data$Sentiment_Label, p = 0.8, list = FALSE)
+
+train_data <- data_matrix[training_samples, ]
+test_data <- data_matrix[-training_samples, ]
+train_labels <- data$Sentiment_Label[training_samples]
+test_labels <- data$Sentiment_Label[-training_samples]
+```
+
+
+```{r}
+# Assuming your labels are 'Negative', 'Neutral', 'Positive'
+all_levels <- c('Negative', 'Neutral', 'Positive')
+
+# Convert labels to factors making sure all levels are included
+train_labels <- factor(train_labels, levels = all_levels)
+test_labels <- factor(test_labels, levels = all_levels)
+
+```
+
+```{r}
+if (!require(e1071)) install.packages("e1071")
+library(e1071)
+
+# Fit a SVM model
+model_svm <- train(train_data, train_labels, method = "svmRadial", trControl = trainControl(method = "cv", number = 10))
+
+# Print the model summary
+print(model_svm)
+```
+```{r}
+# Predict on test data
+predictions <- predict(model_svm, test_data)
+
+# Generate a confusion matrix
+confusionMatrix(predictions, test_labels)
+
 ```
 
 
