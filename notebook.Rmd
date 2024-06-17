@@ -119,7 +119,7 @@ wordcloud(words = sorted_hashtag_counts$Hashtag,
 ```
 
 
-## Question 1: What are the prevailing sentiments associated with key marketing terms and how do they vary across different social media platforms?
+## Question 1: What are the prevailing sentiments and how do they vary across different social media platforms?
 
 Authored by: Emma Zhang
 
@@ -136,11 +136,11 @@ Authored by: Emma Zhang
 ```{r, include = TRUE, echo = TRUE}
 ggplot(df, aes(x = Sentiment_Label, y = Likes, fill = Sentiment_Label)) +
   geom_boxplot() +
-  labs(title = "Box Plot of Likes by Sentiment", x = "Sentiment", y = "Likes")
+  labs(title = "Distribution of Likes for each Sentiment category", x = "Sentiment", y = "Likes")
 
 ggplot(df, aes(x = Sentiment_Label, y = Retweets, fill = Sentiment_Label)) +
   geom_boxplot() +
-  labs(title = "Box Plot of Retweets by Sentiment", x = "Sentiment", y = "Retweets")
+  labs(title = "Distribution of Retweets for each Sentiment category", x = "Sentiment", y = "Retweets")
 ```
 
 ## Question 3: Which specific keywords or phrases are most frequently associated with positive or negative sentiments?
@@ -517,6 +517,8 @@ ui <- dashboardPage(
   dashboardHeader(title = "Sentiment Analysis Dashboard"),
   dashboardSidebar(
     sidebarMenu(
+      menuItem("Question 1", tabName = "question1", icon = icon("chart-column")),
+      menuItem("Question 2", tabName = "question2", icon = icon("chart-simple")),
       menuItem("Question 5", tabName = "question5", icon = icon("chart-bar")),
       menuItem("Question 6", tabName = "question6", icon = icon("line-chart"))
     )
@@ -524,6 +526,55 @@ ui <- dashboardPage(
   dashboardBody(
     useShinyjs(),
     tabItems(
+      tabItem(tabName = "question1",
+              fluidRow(
+                box(
+                  title = "Question 1",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  width = 12,
+                  h4("What are the prevailing sentiments and how do they vary across different social media platforms?"),
+                  p("Authored by: Emma Zhang"),
+                  p("Knowing the sentiment on each platform can help tailor content and engagement strategies."),
+                  p("Across all three platforms, positive sentiments are significantly higher compared to neutral and negative sentiments. This suggests that users generally express more positive emotions on the social media.")
+                ),
+                box(
+                  title = "Sentiment Distribution by Platform", status = "primary", 
+                  solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("sentimentDistribution", height = 600, click = "plot_click"),
+                  width = 12
+                ),
+              )),
+      tabItem(tabName = "question2",
+              fluidRow(
+                box(
+                  title = "Question 2",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  width = 12,
+                  h4("How do public sentiments correlate with variations in engagement metrics like likes and retweets?"),
+                  p("Authored by: Emma Zhang"),
+                  p("Engagement metrics like likes and retweets are indicators of how well content is performing. Understanding their correlation with sentiment can help optimize content to achieve higher engagement, thereby increasing the visibility and reach of posts."),
+                  p("Positive posts receive the highest median engagement for both likes and retweets. Users are more likely to share and like positive content."),
+                  p("Neutral posts receive consistent engagement across likes and retweets, indicating that users engage with such content without significant spikes or drops."),
+                  p("Negative posts receive the lowest median engagement for both likes and retweets. But there are a few outliers in both metrics. The higher engagement might be due to the controversial or attention-grabbing nature of negative content."),
+                ),
+                
+                box(
+                  title = "Distribution of Likes for each Sentiment category", status = "primary", 
+                  solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("likesDistribution", height = 600, click = "plot_click"),
+                  width = 12
+                ),
+                box(
+                  title = "Distribution of Retweets for each Sentiment category", status = "primary", 
+                  solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("retweentsDistribution", height = 600, click = "plot_click"),
+                  width = 12
+                ),
+              )),
       tabItem(tabName = "question5",
               fluidRow(
                 box(
@@ -605,6 +656,30 @@ ui <- dashboardPage(
 
 # Define server logic
 server <- function(input, output) {
+  
+  #Render plot for question 1
+  output$sentimentDistribution <- renderPlot({
+    ggplot(sentiment_platform, aes(x = trimws(Platform), y = Count, fill = Sentiment_Label)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      labs(title = "Sentiment Distribution by Platform", x = "Platform", y = "Count")
+  })
+  
+  #Render plot for question 2 - Likes distribution
+  output$likesDistribution <- renderPlot({
+    ggplot(df, aes(x = Sentiment_Label, y = Likes, fill = Sentiment_Label)) +
+      geom_boxplot() +
+      labs(title = "Distribution of Likes for each Sentiment category", x = "Sentiment", y = "Likes")
+  })
+  
+  output$retweentsDistribution <- renderPlot({
+    ggplot(df, aes(x = Sentiment_Label, y = Retweets, fill = Sentiment_Label)) +
+      geom_boxplot() +
+      labs(title = "Distribution of Retweets for each Sentiment category", x = "Sentiment", 
+           y = "Retweets")
+  })
+  
+  
+  
   # Render sentiment distribution plot for Question 5
   output$sentimentPlot <- renderPlot({
     ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
