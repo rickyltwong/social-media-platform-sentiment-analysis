@@ -17,27 +17,15 @@ The goal of this project is to conduct a sentiment analysis of popular keywords 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#install.packages("shiny")
-#install.packages("shinydashboard")
-#install.packages("dplyr")
-#install.packages("ggplot2")
-#install.packages("stringr")
-#install.packages("wordcloud")
-#install.packages("RColorBrewer")
-#install.packages("tm")
-#install.packages("tidytext")
-```
 
-```{r, include=FALSE}
-library(shiny)
-library(shinydashboard)
-library(dplyr)
-library(ggplot2)
-library(stringr)
-library(wordcloud)
-library(RColorBrewer)
-library(tm)
-library(tidytext)
+pkgs <- c("shiny", "shinydashboard", "dplyr", "ggplot2", "stringr", "wordcloud", "RColorBrewer", "tm", "tidyr", "tidytext", "caret", "DT", "e1071", "shinyjs")
+
+for (pkg in pkgs) {
+  if (!require(pkg, character.only = TRUE)) {
+    install.packages(pkg, dependencies = TRUE)
+    library(pkg, character.only = TRUE)
+  }
+}
 ```
 
 ## Load the dataset
@@ -105,7 +93,6 @@ sentiment_platform
 ```
 
 ```{r}
-# Extract hashtags from the Hashtags column
 extract_hashtags <- function(hashtags) {
   unlist(strsplit(hashtags, " "))
 }
@@ -119,14 +106,24 @@ sorted_hashtag_counts <- hashtag_counts %>%
   arrange(desc(Frequency))
 
 sorted_hashtag_counts
+
+wordcloud(words = sorted_hashtag_counts$Hashtag, 
+          freq = sorted_hashtag_counts$Frequency, 
+          scale = c(1.5, 0.1), 
+          min.freq = 1, 
+          max.words = 200, 
+          random.order = FALSE, 
+          rot.per = 0.35, 
+          colors = brewer.pal(8, "Dark2"))
+
 ```
+
 
 ## Question 1: What are the prevailing sentiments associated with key marketing terms and how do they vary across different social media platforms?
 
 Authored by: Emma Zhang
 
 ```{r, include = TRUE, echo = TRUE}
-library(ggplot2)
 ggplot(sentiment_platform, aes(x = trimws(Platform), y = Count, fill = Sentiment_Label)) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(title = "Sentiment Distribution by Platform", x = "Platform", y = "Count")
@@ -146,16 +143,11 @@ ggplot(df, aes(x = Sentiment_Label, y = Retweets, fill = Sentiment_Label)) +
   labs(title = "Box Plot of Retweets by Sentiment", x = "Sentiment", y = "Retweets")
 ```
 
-## Question 3:Which specific keywords or phrases are most frequently associated with positive or negative sentiments?
+## Question 3: Which specific keywords or phrases are most frequently associated with positive or negative sentiments?
 
 Authored by: Xiaoxin Bian
 
 ```{r}
-install.packages("tidyr")
-install.packages("tidytext")
-library(tidytext)
-library(tidyr)
-
 # Cleaning and splitting text
 text_data <- df %>%
   mutate(Text = tolower(Text)) %>%
@@ -171,12 +163,14 @@ hashtag_data <- df %>%
 # Combine both datasets
 combined_data <- bind_rows(text_data, hashtag_data)
 ```
+
 ```{r}
 stop_words <- get_stopwords()
 
 cleaned_data <- combined_data %>%
   anti_join(stop_words, by = "word")
 ```
+
 ```{r}
 keyword_sentiment <- cleaned_data %>%
   group_by(word, Sentiment_Label) %>%
@@ -207,14 +201,11 @@ ggplot(negative_words[1:20,], aes(x = reorder(word, -Count), y = Count)) +
   coord_flip()
 ```
 
-## Question 4:Develop machine learning models that can predict the sentiment of a text based on the keywords it contains.
+## Question 4: Develop machine learning models that can predict the sentiment of a text based on the keywords it contains.
 
 Authored by: Xiaoxin Bian
 
 ```{r}
-if (!require(tm)) install.packages("tm")
-library(tm)
-
 # Check and clean data, handle NA values if necessary
 data <- na.omit(df)
 
@@ -231,8 +222,8 @@ data_matrix <- as.matrix(dtm)
 colnames(data_matrix) <- make.names(colnames(data_matrix))
 
 ```
+
 ```{r}
-if (!require(caret)) install.packages("caret")
 set.seed(123)
 training_samples <- createDataPartition(data$Sentiment_Label, p = 0.8, list = FALSE)
 
@@ -254,15 +245,13 @@ test_labels <- factor(test_labels, levels = all_levels)
 ```
 
 ```{r}
-if (!require(e1071)) install.packages("e1071")
-library(e1071)
-
 # Fit a SVM model
 model_svm <- train(train_data, train_labels, method = "svmRadial", trControl = trainControl(method = "cv", number = 10))
 
 # Print the model summary
 print(model_svm)
 ```
+
 ```{r}
 # Predict on test data
 predictions <- predict(model_svm, test_data)
@@ -389,17 +378,15 @@ print(p3)
 ```
 
 ```{r}
-# Select top 3 hashtags from the top 10
-
-# Create word clouds for top 3 hashtags
+# Create word clouds for top hashtags
 wordcloud(words = top_hashtags_na$word, freq = top_hashtags_na$total_retweets, 
-          scale = c(2, 0.1), min.freq = 1, 
+          scale = c(1.5, 0.1), min.freq = 1, 
           max.words = 200, 
           random.order = FALSE, 
           rot.per = 0.35,colors = brewer.pal(8, "Blues"), main = "Top 3 Hashtags in North America")
 
 wordcloud(words = top_hashtags_eu$word, freq = top_hashtags_eu$total_retweets, 
-          scale = c(2, 0.1), min.freq = 1, 
+          scale = c(1.5, 0.1), min.freq = 1, 
           max.words = 200, 
           random.order = FALSE, 
           rot.per = 0.35,colors = brewer.pal(8, "Oranges"), main = "Top 3 Hashtags in Europe")
@@ -428,11 +415,11 @@ df <- df %>%
   mutate(YearMonth = format(Timestamp, "%Y-%m"))
 
 # Filter data to include only from 2020 onward
-df <- df %>%
+df_2020 <- df %>%
   filter(format(Timestamp, "%Y") >= 2020)
 
 # Group by YearMonth and Sentiment to get the count of each sentiment per month
-sentiment_over_time <- df %>%
+sentiment_over_time <- df_2020 %>%
   group_by(YearMonth, Sentiment_Label) %>%
   summarize(count = n()) %>%
   ungroup()
@@ -524,41 +511,91 @@ Understanding these temporal sentiment trends enables Ignite Digital to tailor t
 
 
 ## Shiny Dashboard
-
 ```{r}
+# Define UI for application
 ui <- dashboardPage(
   dashboardHeader(title = "Sentiment Analysis Dashboard"),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Sentiment Distribution", tabName = "sentiment", icon = icon("chart-bar")),
-      menuItem("Top Hashtags", tabName = "hashtags", icon = icon("hashtag"))
+      menuItem("Question 5", tabName = "question5", icon = icon("chart-bar")),
+      menuItem("Question 6", tabName = "question6", icon = icon("line-chart"))
     )
   ),
   dashboardBody(
+    useShinyjs(),
     tabItems(
-      # First tab content
-      tabItem(tabName = "sentiment",
+      tabItem(tabName = "question5",
               fluidRow(
                 box(
+                  title = "Question 5",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  width = 12,
+                  h4("Are there notable differences in sentiment and engagement when comparing user-generated content across different regions? How do these differences impact overall sentiment trends? [Geographical Strategy]"),
+                  p("Authored by: Ricky Wong"),
+                  p("In marketing trend investigations, understanding regional differences in user-generated content is crucial for tailoring strategies to specific markets. Social media users come from diverse regions, and analyzing sentiment and engagement metrics across these regions helps us optimize our marketing efforts."),
+                  p("By examining our dataset, which categorizes user-generated content by sentiment (positive, negative, neutral) and includes engagement metrics like likes and retweets, we can identify regional trends. This analysis focuses on North America and Europe to highlight key differences."),
+                  p("Analysis Strategy:"),
+                  p("1. We grouped the data by country and sentiment to observe variations. We focused on the top 10 countries by post count, calculating the percentage of each sentiment."),
+                  p("2. We want to focus in North America and Europe, we grouped the top 10 countries into North America and Europe. We then again analyze sentiment distribution within these regions."),
+                  p("3. For each region, identify the top 10 hashtags based on the total number of retweets from posts containing these hashtags.")
+                ),
+                box(
                   title = "Sentiment Distribution Across Top 10 Regions", status = "primary", solidHeader = TRUE, collapsible = TRUE,
-                  plotOutput("sentimentPlot", width = 1200)
-                , width=12)
+                  plotOutput("sentimentPlot", height = 600, click = "plot_click"),
+                  width = 12
+                ),
+                box(
+                  title = "Top Hashtags by Retweets", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  selectInput("region", "Select Region:", choices = c("North America", "Europe")),
+                  plotOutput("hashtagPlot", height = 600),
+                  dataTableOutput("hashtagTable"),
+                  width = 6
+                ),
+                box(
+                  title = "Word Cloud of Top Hashtags", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("wordcloudPlot", height = 300),
+                  width = 6
+                )
               )
       ),
       
-      # Second tab content
-      tabItem(tabName = "hashtags",
+      # Question 6 tab content
+      tabItem(tabName = "question6",
               fluidRow(
                 box(
-                  title = "Top 10 Hashtags by Retweets", status = "primary", solidHeader = TRUE, collapsible = TRUE,
-                  selectInput("region", "Select Region:", choices = c("North America", "Europe")),
-                  plotOutput("hashtagPlot", height = 400)
-                )
-              ),
-              fluidRow(
+                  title = "Question 6",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  width = 12,
+                  h4("How do the sentiments associated with key marketing terms change over time? Which months have the highest counts of positive and negative sentiments, and what are the trending hashtags during these periods? [Temporal Trend strategy]"),
+                  p("Authored by: Ricky Wong"),
+                  p("Understanding how sentiments change over time is crucial for marketers to adapt their strategies to current trends. By examining the dataset over a specific time range, we can identify patterns and peak periods of positive and negative sentiments."),
+                  p("Analysis Strategy:"),
+                  p("1. We extracted the year and month from the timestamp of each post to analyze sentiment trends over time."),
+                  p("2. We filtered the data to include only posts from 2020 onward."),
+                  p("3. We grouped the data by year-month and sentiment to calculate the count of each sentiment per month."),
+                  p("4. For the months with the highest counts of positive and negative sentiments, we identified the top hashtags based on post count.")
+                ),
                 box(
-                  title = "Word Cloud of Top 3 Hashtags", status = "primary", solidHeader = TRUE, collapsible = TRUE,
-                  plotOutput("wordcloudPlot", height = 400)
+                  title = "Sentiment Trends Over Time", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  dateRangeInput("dateRange", "Select Date Range:",
+                                 start = min(df$Timestamp), end = max(df$Timestamp),
+                                 min = min(df$Timestamp), max = max(df$Timestamp)),
+                  plotOutput("trendPlot", height = 600),
+                  width = 12
+                ),
+                box(
+                  title = "Top Hashtags in Months with Highest Positive Sentiments", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("positiveWordcloudPlot", height = 500),
+                  width = 6
+                ),
+                box(
+                  title = "Top Hashtags in Months with Highest Negative Sentiments", status = "primary", solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("negativeWordcloudPlot", height = 500),
+                  width = 6
                 )
               )
       )
@@ -566,23 +603,9 @@ ui <- dashboardPage(
   )
 )
 
-# Define server logic required
+# Define server logic
 server <- function(input, output) {
-  
-  # Preprocess data for sentiment analysis
-  sentiment_by_region <- df %>%
-    group_by(Country, Sentiment_Label) %>%
-    summarize(count = n()) %>%
-    ungroup()
-  
-  top_countries <- sentiment_by_region %>%
-    group_by(Country) %>%
-    summarize(total_count = sum(count)) %>%
-    top_n(10, total_count) %>%
-    pull(Country)
-  
-  
-  # Render sentiment distribution plot
+  # Render sentiment distribution plot for Question 5
   output$sentimentPlot <- renderPlot({
     ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
       geom_bar(stat = "identity", position = "stack") +
@@ -594,14 +617,12 @@ server <- function(input, output) {
       ylab("Count") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1),
             plot.title = element_text(hjust = 0.5),
-            legend.position = "top") +
+            legend.position = "top",
+            plot.margin = unit(c(1,1,1,1), "cm")) +
       coord_flip()
   })
   
   # Reactive expressions for region-specific data
-  north_america <- c("USA", "Canada")
-  europe <- c("UK", "Germany", "France", "Italy")
-  
   region_data <- reactive({
     if (input$region == "North America") {
       df %>% filter(Country %in% north_america)
@@ -610,12 +631,12 @@ server <- function(input, output) {
     }
   })
   
-  # Render hashtag plot based on selected region
+  # Render hashtag plot based on selected region for Question 5
   output$hashtagPlot <- renderPlot({
     data <- region_data()
     
     top_hashtags <- data %>%
-      filter(Sentiment == "Positive") %>%
+      filter(Sentiment_Label == "Positive") %>%
       unnest_tokens(word, Hashtags) %>%
       group_by(word) %>%
       summarize(total_retweets = sum(Retweets)) %>%
@@ -629,25 +650,105 @@ server <- function(input, output) {
       ylab("Total Retweets")
   })
   
-  # Render word cloud based on selected region
+  # Render hashtag data table based on selected region for Question 5
+  output$hashtagTable <- renderDataTable({
+    data <- region_data()
+    
+    top_hashtags <- data %>%
+      filter(Sentiment_Label == "Positive") %>%
+      unnest_tokens(word, Hashtags) %>%
+      group_by(word) %>%
+      summarize(total_retweets = sum(Retweets))
+    
+    datatable(top_hashtags, options = list(pageLength = 10))
+  })
+  
+  # Render word cloud based on selected region for Question 5
   output$wordcloudPlot <- renderPlot({
     data <- region_data()
     
     top_hashtags <- data %>%
-      filter(Sentiment == "Positive") %>%
+      filter(Sentiment_Label == "Positive") %>%
       unnest_tokens(word, Hashtags) %>%
       group_by(word) %>%
-      summarize(total_retweets = sum(Retweets)) %>%
-      top_n(10, total_retweets)
+      summarize(total_retweets = sum(Retweets))
     
-    top_3_hashtags <- top_hashtags %>%
-      top_n(3, total_retweets)
+    if (nrow(top_hashtags) > 0) {
+      wordcloud(words = top_hashtags$word, freq = top_hashtags$total_retweets, 
+                scale = c(2, 0.1), min.freq = 1, max.words = 200, random.order = FALSE, 
+                rot.per = 0.35, colors = ifelse(input$region == "North America", brewer.pal(7,"BrBG"), brewer.pal(7, "Dark2")))
+    } else {
+      plot.new()
+      text(0.5, 0.5, "No data available for the selected region", cex = 1.5)
+    }
     
-    wordcloud(words = top_3_hashtags$word, freq = top_3_hashtags$total_retweets, 
-              scale = c(3, 0.5), colors = ifelse(input$region == "North America", "blue", "red"))
+  })
+  
+  # Reactive expression to filter data based on selected date range
+  filtered_data <- reactive({
+    df %>% filter(Timestamp >= input$dateRange[1] & Timestamp <= input$dateRange[2])
+  })
+  
+  # Render sentiment trends plot for Question 6
+  output$trendPlot <- renderPlot({
+    data <- filtered_data() %>%
+      mutate(YearMonth = format(Timestamp, "%Y-%m")) %>%
+      group_by(YearMonth, Sentiment_Label) %>%
+      summarize(count = n()) %>%
+      ungroup()
+    
+    ggplot(data, aes(x = as.Date(paste0(YearMonth, "-01")), y = count, color = Sentiment_Label)) +
+      geom_line(size = 1) +
+      geom_point(size = 2) +
+      ggtitle("Sentiment Trends Over Time") +
+      xlab("Time") +
+      ylab("Count of Sentiments") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  })
+  
+  # Render positive word cloud for Question 6
+  output$positiveWordcloudPlot <- renderPlot({
+    data <- filtered_data() %>%
+      filter(YearMonth == max_positive_month) %>%
+      unnest_tokens(word, Hashtags) %>%
+      group_by(word) %>%
+      summarize(post_count = n())
+    
+    if (nrow(data) > 0) {
+      wordcloud(words = data$word, freq = data$post_count, 
+                scale = c(2.2, 0.1), min.freq = 1, 
+                max.words = 200, 
+                random.order = FALSE, 
+                rot.per = 0.35, colors = brewer.pal(8, "Blues"), main = paste("Top Hashtags in Month with Highest Positive Sentiment"))
+    } else {
+      plot.new()
+      text(0.5, 0.5, "No data available for the selected date range", cex = 1.5)
+    }
+  })
+  
+  # Render negative word cloud for Question 6
+  output$negativeWordcloudPlot <- renderPlot({
+    data <- filtered_data() %>%
+      filter(YearMonth == max_negative_month) %>%
+      unnest_tokens(word, Hashtags) %>%
+      group_by(word) %>%
+      summarize(post_count = n())
+    
+    if (nrow(data) > 0) {
+      wordcloud(words = data$word, freq = data$post_count, 
+                scale = c(2.2, 0.1), min.freq = 1, 
+                max.words = 200, 
+                random.order = FALSE, 
+                rot.per = 0.35, colors = brewer.pal(8, "Reds"), main = paste("Top Hashtags in Month with Highest Negative Sentiment"))
+    } else {
+      plot.new()
+      text(0.5, 0.5, "No data available for the selected date range", cex = 1.5)
+    }
   })
 }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
 ```
+
