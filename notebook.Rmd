@@ -158,7 +158,7 @@ hashtag_data <- df %>%
   mutate(Hashtags = str_replace_all(Hashtags, " #", ",")) %>%
   separate_rows(Hashtags, sep = ",") %>%
   filter(Hashtags != "") %>%
-  mutate(word = Hashtags)  # Create a uniform column name for merging
+  mutate(word = tolower(Hashtags))  # Create a uniform column name for merging
 
 # Combine both datasets
 combined_data <- bind_rows(text_data, hashtag_data)
@@ -257,7 +257,7 @@ print(model_svm)
 predictions <- predict(model_svm, test_data)
 
 # Generate a confusion matrix
-confusionMatrix(predictions, test_labels)
+conf_matrix <-confusionMatrix(predictions, test_labels)
 
 ```
 
@@ -512,13 +512,20 @@ Understanding these temporal sentiment trends enables Ignite Digital to tailor t
 
 ## Shiny Dashboard
 ```{r}
-# Define UI for application
+library(shiny)
+library(shinydashboard)
+library(ggplot2)
+library(dplyr)
+library(tidytext)
+
 ui <- dashboardPage(
   dashboardHeader(title = "Sentiment Analysis Dashboard"),
   dashboardSidebar(
     sidebarMenu(
       menuItem("Question 1", tabName = "question1", icon = icon("chart-column")),
       menuItem("Question 2", tabName = "question2", icon = icon("chart-simple")),
+      menuItem("Question 3", tabName = "question3", icon = icon("chart-bar")),
+      menuItem("Question 4", tabName = "question4", icon = icon("cog")), 
       menuItem("Question 5", tabName = "question5", icon = icon("chart-bar")),
       menuItem("Question 6", tabName = "question6", icon = icon("line-chart"))
     )
@@ -574,6 +581,58 @@ ui <- dashboardPage(
                   plotOutput("retweentsDistribution", height = 600, click = "plot_click"),
                   width = 12
                 ),
+              )),
+      tabItem(tabName = "question3",  
+              fluidRow(
+                box(
+                  title = "Question 3",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  width = 12,
+                  h4("Which specific keywords or phrases are most frequently associated with positive or negative sentiments?"),
+                  p("Authored by: Xiaoxin Bian"),
+                  p("The test and hashtag was processed to extract individual words and their associated sentiment labels."),
+                  p("Understanding the specific keywords associated with positive or negative sentiments can help in tailoring content to evoke desired emotions and improve engagement.")
+                ),
+                box(
+                  title = "Top Positive Keywords", status = "primary", 
+                  solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("positiveKeywordsPlot", height = 600),  # Output for positive keywords plot
+                  width = 12
+                ),
+                box(
+                  title = "Top Negative Keywords", status = "primary", 
+                  solidHeader = TRUE, collapsible = TRUE,
+                  plotOutput("negativeKeywordsPlot", height = 600),  # Output for negative keywords plot
+                  width = 12
+                ),
+              )),
+      tabItem(tabName = "question4", 
+              fluidRow(
+                box(
+                  title = "Question 4",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  width = 12,
+                  h4("Develop machine learning models that can predict the sentiment of a text based on the keywords it contains."),
+                  p("Authored by: Xiaoxin Bian"),
+                  p("The objective is to build a machine learning model to predict the sentiment of a text based on the keywords it contains. The Support Vector Machine (SVM) model was trained using a document-term matrix representation of the text data."),
+                  p("The model achieved an accuracy of 71.03% with the following confusion matrix:")
+                ),
+                box(
+                  title = "Confusion Matrix", status = "primary", 
+                  solidHeader = TRUE, collapsible = TRUE,
+                  tableOutput("confMatrix"),  # Output for confusion matrix
+                  width = 12
+                ),
+                box(
+                  title = "Model Summary", status = "primary", 
+                  solidHeader = TRUE, collapsible = TRUE,
+                  verbatimTextOutput("modelSummary"),  # Output for model summary
+                  width = 12
+                )
               )),
       tabItem(tabName = "question5",
               fluidRow(
@@ -678,6 +737,30 @@ server <- function(input, output) {
            y = "Retweets")
   })
   
+  # Render positive keywords plot for Question 3
+  output$positiveKeywordsPlot <- renderPlot({
+    ggplot(positive_words[1:20,], aes(x = reorder(word, -Count), y = Count)) +
+      geom_bar(stat = "identity", fill = "green") +
+      labs(title = "Top Positive Keywords", x = "Keywords", y = "Frequency") +
+      coord_flip()+
+      theme_minimal()
+  })
+  
+  output$negativeKeywordsPlot <- renderPlot({
+    ggplot(negative_words[1:20,], aes(x = reorder(word, -Count), y = Count)) +
+      geom_bar(stat = "identity", fill = "red") +
+      labs(title = "Top Negative Keywords", x = "Keywords", y = "Frequency") +
+      coord_flip()+
+      theme_minimal()
+  })
+  
+  output$confMatrix <- renderTable({
+    conf_matrix$table
+  })
+  
+  output$modelSummary <- renderPrint({
+    model_svm
+  })
   
   
   # Render sentiment distribution plot for Question 5
