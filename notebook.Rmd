@@ -3,11 +3,14 @@ title: "Project1-Group2"
 author: "Emma Zhang, Ricky Wong, Xiaoxin Bian"
 date: "`r Sys.Date()`"
 output:
-  html_document: default
-  pdf_document: default
   word_document: default
-runtime: shiny
+  pdf_document: default
+  html_document: default
 ---
+
+```{r setup}
+knitr::opts_chunk$set(echo=TRUE, include=TRUE)
+```
 
 ## Objective
 
@@ -15,9 +18,8 @@ The goal of this project is to conduct a sentiment analysis of popular keywords 
 
 ## Install required libraries
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
+```{r, include=FALSE}
 pkgs <- c("shiny", "shinydashboard", "dplyr", "ggplot2", "stringr", "wordcloud", "RColorBrewer", "tm", "tidyr", "tidytext", "caret", "DT", "e1071", "shinyjs")
 
 for (pkg in pkgs) {
@@ -36,7 +38,7 @@ df <- read.csv("./sentimentdataset.csv")
 
 **Use glimpse to explore the dataset.**
 
-```{r, include = TRUE, echo = TRUE}
+```{r echo=TRUE, paged.print=TRUE}
 glimpse(df)
 ```
 
@@ -118,7 +120,6 @@ wordcloud(words = sorted_hashtag_counts$Hashtag,
 
 ```
 
-
 ## Question 1: What are the prevailing sentiments and how do they vary across different social media platforms?
 
 Authored by: Emma Zhang
@@ -178,6 +179,7 @@ keyword_sentiment <- cleaned_data %>%
 
 print(keyword_sentiment)
 ```
+
 ```{r}
 # Filter for positive and negative sentiments
 positive_words <- keyword_sentiment %>%
@@ -233,7 +235,6 @@ train_labels <- data$Sentiment_Label[training_samples]
 test_labels <- data$Sentiment_Label[-training_samples]
 ```
 
-
 ```{r}
 # Assuming your labels are 'Negative', 'Neutral', 'Positive'
 all_levels <- c('Negative', 'Neutral', 'Positive')
@@ -269,10 +270,7 @@ In marketing trend investigations, understanding regional differences in user-ge
 
 By examining our dataset, which categorizes user-generated content by sentiment (positive, negative, neutral) and includes engagement metrics like likes and retweets, we can identify regional trends. This analysis focuses on North America and Europe to highlight key differences.
 
-Analysis Strategy:
-1. We grouped the data by country and sentiment to observe variations. We focused on the top 10 countries by post count, calculating the percentage of each sentiment.
-2. We want to focus in North America and Europe, we grouped the top 10 countries into North America and Europe. We then again analyze sentiment distribution within these regions.
-3. For each region, identify the top 10 hashtags based on the total number of retweets from posts containing these hashtags.
+Analysis Strategy: 1. We grouped the data by country and sentiment to observe variations. We focused on the top 10 countries by post count, calculating the percentage of each sentiment. 2. We want to focus in North America and Europe, we grouped the top 10 countries into North America and Europe. We then again analyze sentiment distribution within these regions. 3. For each region, identify the top 10 hashtags based on the total number of retweets from posts containing these hashtags.
 
 ```{r}
 sentiment_by_region <- df %>%
@@ -400,8 +398,8 @@ We aggregated the data according to the countries belonging to North America and
 
 Understanding these regional differences allows us to:
 
-- tailor content to fit the preferences and sentiments of each region, improving engagement and conversion rates. For example, ...
-- use sentiment and hashtag trends to create targeted marketing campaigns, such as leveraging nostalgic content in regions where it performs well. For example, ...
+-   tailor content to fit the preferences and sentiments of each region, improving engagement and conversion rates. For example, ...
+-   use sentiment and hashtag trends to create targeted marketing campaigns, such as leveraging nostalgic content in regions where it performs well. For example, ...
 
 ## Question 6: How do the sentiments associated with key marketing terms change over time? Which months have the highest counts of positive and negative sentiments, and what are the trending hashtags during these periods? [Temporal Trend strategy]
 
@@ -492,16 +490,16 @@ From the analysis, we observed that the months with the highest counts of positi
 
 For the month with the highest positive sentiment, the top hashtags included:
 
-- #cooking
-- #nature
-- #gaming
-- #fitness
+-   #cooking
+-   #nature
+-   #gaming
+-   #fitness
 
 For the month with the highest negative sentiment, the top hashtags included:
 
-- #highschoolstruggles
-- #highschoolreality
-- #highschoolemotions
+-   #highschoolstruggles
+-   #highschoolreality
+-   #highschoolemotions
 
 This pattern is quite reasonable and understandable. January, being the start of the year, is a time when people tend to stay positive and motivated, setting new goals. On the other hand, September marks the beginning of a new academic year. Adolescents face new challenges and uncertainties, especially those entering high school, which can lead to feelings of pessimism or negativity.
 
@@ -509,14 +507,9 @@ This pattern is quite reasonable and understandable. January, being the start of
 
 Understanding these temporal sentiment trends enables Ignite Digital to tailor their marketing strategies more effectively. For example, promoting wellness and self-improvement content in January or addressing back-to-school anxieties in September can lead to more impactful and timely marketing efforts. By aligningour campaigns with the flow of public sentiment, we can enhance engagement and resonance with our audience.
 
-
 ## Shiny Dashboard
+
 ```{r}
-library(shiny)
-library(shinydashboard)
-library(ggplot2)
-library(dplyr)
-library(tidytext)
 
 ui <- dashboardPage(
   dashboardHeader(title = "Sentiment Analysis Dashboard"),
@@ -909,4 +902,3 @@ server <- function(input, output) {
 # Run the application 
 shinyApp(ui = ui, server = server)
 ```
-
