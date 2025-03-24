@@ -30,10 +30,16 @@ for (pkg in pkgs) {
 }
 ```
 
+## Source analysis functions
+
+```{r}
+source("R/analysis.R")
+```
+
 ## Load the dataset
 
 ```{r, include = TRUE, echo = TRUE}
-df <- read.csv("./sentimentdataset.csv")
+df <- read.csv("./data/sentimentdataset.csv")
 ```
 
 **Use glimpse to explore the dataset.**
@@ -44,37 +50,8 @@ glimpse(df)
 
 ## Data Processing
 
-**Remove unnecessary columns**
-
 ```{r, include = TRUE, echo = TRUE}
-df <- df[, -c(1, 2)]
-df$Country <- as.factor(str_trim(df$Country))
-```
-
-**Define sentiment label categories**
-
-```{r, include = TRUE, echo = TRUE}
-positive <- c("Positive", "Happiness", "Joy", "Love", "Amusement", "Enjoyment", "Admiration", "Affection", "Awe","Acceptance", "Adoration", "Calmness", "Excitement", "Kind", "Pride", "Elation", "Euphoria", "Contentment", "Serenity", "Gratitude", "Hope", "Empowerment", "Compassion", "Tenderness", "Enthusiasm", "Fulfillment", "Reverence", "Hopeful", "Proud", "Grateful", "Empathetic", "Compassionate", "Playful", "Free-spirited", "Inspired", "Confident", "Thrill", "Overjoyed", "Inspiration", "Motivation", "JoyfulReunion","Satisfaction", "Blessed", "Appreciation", "Confidence", "Accomplishment", "Wonderment", "Optimism", "Enchantment", "Mindfulness", "Elegance", "Whimsy", "Harmony", "Creativity", "Radiance", "Wonder", "Rejuvenation", "Coziness", "Adventure", "Melodic", "FestiveJoy", "InnerJourney", "Freedom", "Dazzle", "Adrenaline", "ArtisticBurst", "CulinaryOdyssey", "Resilience", "Immersion", "Spark", "Marvel", "Positivity", "Kindness", "Friendship", "Success", "Exploration", "Amazement", "Romance", "Captivation", "Tranquility", "Grandeur", "Emotion", "Energy", "Celebration", "Charm", "Ecstasy", "Colorful", "Hypnotic", "Connection", "Iconic", "Journey", "Engagement", "Touched", "Triumph", "Heartwarming", "Solace", "Breakthrough", "Imagination", "Vibrancy", "Mesmerizing", "Creative Inspiration", "Nature's Beauty", "Celestial Wonder", "Happy", "PlayfulJoy", "DreamChaser", "Blessing", "Sympathy", "Renewed Effort", "Culinary Adventure", "Determination", "Zest", "Joy in Baking", "Challenge", "Winter Magic", "Thrilling Journey", "Runway Creativity", "Ocean's Freedom", "Relief", "Curiosity"
-)
-
-negative <- c("Negative", "Anger", "Fear", "Sadness", "Disgust", "Disappointed", "Bitter", "Shame", "Despair", "Grief", "Loneliness", "Jealousy", "Resentment", "Frustration", "Boredom", "Anxiety", "Intimidation", "Helplessness", "Envy", "Regret", "Melancholy", "Fearful", "Apprehensive", "Overwhelmed", "Devastated", "Frustrated", "Envious", "Dismissive", "Bitterness", "Heartbreak", "Betrayal", "Suffering", "EmotionalStorm", "Isolation", "Disappointment", "LostLove", "Exhaustion", "Sorrow", "Darkness", "Desperation", "Ruins", "Desolation", "Loss", "Heartache", "Solitude", "Obstacle", "Pressure", "Miscalculation", "Sad", "Hate", "Bad", "Jealous", "Embarrassed"
-)
-
-neutral <- c("Neutral", "Surprise", "Anticipation", "Confusion", "Arousal", "Indifference", "Numbness", "Nostalgia", "Ambivalence",  "Contemplation", "Reflection", "Intrigue", "Whispers of the Past", "Pensive", "Bittersweet", "Suspense", "Envisioning History", "Mischievous", "Yearning"
-)
-
-```
-
-**Add a label column based on category definition**
-
-```{r, include = TRUE, echo = TRUE}
-df <- df %>% mutate(
-  Sentiment = trimws(Sentiment),
-  Sentiment_Label = case_when(
-  Sentiment %in% positive ~ "Positive",
-  Sentiment %in% negative ~ "Negative",
-  Sentiment %in% neutral ~ "Neutral"
-))
+df <- process_sentiment_data(df)
 ```
 
 **View processed data**
@@ -86,26 +63,12 @@ head(df)
 **Sentiment distribution by platform**
 
 ```{r, include = TRUE, echo = TRUE}
-sentiment_platform <- df %>%
-  mutate(Platform = trimws(Platform)) %>% 
-  group_by(Platform, Sentiment_Label) %>%
-  summarise(Count = n())
-
+sentiment_platform <- analyze_sentiment_by_platform(df)
 sentiment_platform
 ```
 
 ```{r}
-extract_hashtags <- function(hashtags) {
-  unlist(strsplit(hashtags, " "))
-}
-
-all_hashtags <- unlist(lapply(df$Hashtags, extract_hashtags))
-all_hashtags <- all_hashtags[all_hashtags != "" & all_hashtags != " "]
-hashtag_counts <- as.data.frame(table(all_hashtags))
-
-colnames(hashtag_counts) <- c("Hashtag", "Frequency")
-sorted_hashtag_counts <- hashtag_counts %>%
-  arrange(desc(Frequency))
+sorted_hashtag_counts <- analyze_hashtags(df)
 
 sorted_hashtag_counts
 
@@ -117,7 +80,6 @@ wordcloud(words = sorted_hashtag_counts$Hashtag,
           random.order = FALSE, 
           rot.per = 0.35, 
           colors = brewer.pal(8, "Dark2"))
-
 ```
 
 ## Question 1: What are the prevailing sentiments and how do they vary across different social media platforms?
@@ -149,49 +111,20 @@ ggplot(df, aes(x = Sentiment_Label, y = Retweets, fill = Sentiment_Label)) +
 Authored by: Xiaoxin Bian
 
 ```{r}
-# Cleaning and splitting text
-text_data <- df %>%
-  mutate(Text = tolower(Text)) %>%
-  unnest_tokens(word, Text)
-
-# Cleaning and splitting hashtags
-hashtag_data <- df %>%
-  mutate(Hashtags = str_replace_all(Hashtags, " #", ",")) %>%
-  separate_rows(Hashtags, sep = ",") %>%
-  filter(Hashtags != "") %>%
-  mutate(word = tolower(Hashtags))  # Create a uniform column name for merging
-
-# Combine both datasets
-combined_data <- bind_rows(text_data, hashtag_data)
+cleaned_data <- prepare_text_data(df)
 ```
 
 ```{r}
-stop_words <- get_stopwords()
-
-cleaned_data <- combined_data %>%
-  anti_join(stop_words, by = "word")
-```
-
-```{r}
-keyword_sentiment <- cleaned_data %>%
-  group_by(word, Sentiment_Label) %>%
-  summarise(Count = n(), .groups = 'drop')
+keywords <- analyze_keywords_by_sentiment(cleaned_data)
+keyword_sentiment <- keywords$all_keywords
+positive_words <- keywords$positive_words
+negative_words <- keywords$negative_words
 
 print(keyword_sentiment)
 ```
 
 ```{r}
-# Filter for positive and negative sentiments
-positive_words <- keyword_sentiment %>%
-  filter(Sentiment_Label == "Positive") %>%
-  arrange(desc(Count))
-
-negative_words <- keyword_sentiment %>%
-  filter(Sentiment_Label == "Negative") %>%
-  arrange(desc(Count))
-
 # Use ggplot2 for visualization
-library(ggplot2)
 ggplot(positive_words[1:20,], aes(x = reorder(word, -Count), y = Count)) +
   geom_bar(stat = "identity", fill = "green") +
   labs(title = "Top Positive Keywords", x = "Keywords", y = "Frequency") +
@@ -273,34 +206,7 @@ By examining our dataset, which categorizes user-generated content by sentiment 
 Analysis Strategy: 1. We grouped the data by country and sentiment to observe variations. We focused on the top 10 countries by post count, calculating the percentage of each sentiment. 2. We want to focus in North America and Europe, we grouped the top 10 countries into North America and Europe. We then again analyze sentiment distribution within these regions. 3. For each region, identify the top 10 hashtags based on the total number of retweets from posts containing these hashtags.
 
 ```{r}
-sentiment_by_region <- df %>%
-  group_by(Country, Sentiment_Label) %>%
-  summarize(count = n()) %>%
-  ungroup()
-
-top_countries <- sentiment_by_region %>%
-  group_by(Country) %>%
-  summarize(total_count = sum(count)) %>%
-  top_n(10, total_count) %>%
-  pull(Country)
-
-top_sentiment_by_region <- sentiment_by_region %>%
-  filter(Country %in% top_countries)
-
-top_sentiment_by_region <- top_sentiment_by_region %>%
-  group_by(Country) %>%
-  mutate(percentage = count / sum(count) * 100) %>%
-  ungroup()
-
-top_sentiment_by_region <- top_sentiment_by_region %>%
-  left_join(
-    sentiment_by_region %>%
-      group_by(Country) %>%
-      summarize(total_count = sum(count)),
-    by = "Country"
-  )
-
-top_sentiment_by_region
+top_sentiment_by_region <- analyze_sentiment_by_region(df)
 
 p1 <- ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y = count, fill = Sentiment_Label)) +
   geom_bar(stat = "identity", position = "stack") +
@@ -324,7 +230,7 @@ p1 <- ggplot(top_sentiment_by_region, aes(x = reorder(Country, total_count), y =
 
 p1
 
-# ggsave("./charts/sentiment_distribution_across_regions.png", p1, height = 15, width =25)
+# ggsave("./figs/sentiment_distribution_across_regions.png", p1, height = 15, width =25)
 ```
 
 ### Results 1

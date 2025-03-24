@@ -1,0 +1,12 @@
+# R language settings
+*.R linguist-language=R
+*.Rmd linguist-language=R
+*.Rproj linguist-language=R
+
+# Documentation files
+*.md linguist-documentation=false
+*.html linguist-documentation=true
+*.docx linguist-documentation=true
+
+# Data files
+*.csv linguist-detectable=false 
